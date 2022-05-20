@@ -1,0 +1,10 @@
+certifi==2021.10.8
+fastapi==0.68.1
+pydantic==1.9.0
+pytz==2022.1
+requests==2.27.1
+six==1.16.0
+SQLAlchemy==1.4.23
+sqlparse==0.4.2
+starlette==0.14.2
+uvicorn==0.15.0
