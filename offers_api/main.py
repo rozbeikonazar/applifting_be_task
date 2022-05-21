@@ -10,6 +10,7 @@ import uvicorn
 from typing import List,Optional
 from fastapi.encoders import jsonable_encoder
 
+
 app = FastAPI(title="Sample FastAPI Application",
     description="Sample FastAPI Application with Swagger and Sqlalchemy",
     version="1.0.0",)
@@ -62,7 +63,6 @@ def get_offer(offer_id: int,db: Session = Depends(get_db)):
     if db_offer is None:
         raise HTTPException(status_code=404, detail="Offer not found with the given ID")
     return db_offer
-
 # @app.delete('/offers/{offer_id}', tags=["Offer"])
 # async def delete_offer(offer_id: int,db: Session = Depends(get_db)):
 #     """
@@ -74,9 +74,14 @@ def get_offer(offer_id: int,db: Session = Depends(get_db)):
 #     await OfferRepo.delete(db,offer_id)
 #     return "Offer deleted successfully!"
 #TODO ADD NAME and DESCRIPTION
-@app.post('/products/register', tags=['Offer'], response_model=schemas.CreateOffer)
-def passss():
-    pass
+@app.post('/products/register', tags=['Offer'],response_model=schemas.Offer)
+async def create_offer(offer_request: schemas.OfferCreate, db: Session = Depends(get_db)):
+    print(f'================================{offer_request}=================================')
+    # db_product = OfferRepo.fetch_by_id(db, _id=offer_request.product_id)
+    # if db_product:
+    #     raise HTTPException(status_code=400, detail="Offer already exists!")
+
+    return await OfferRepo.create(db=db, offer=offer_request)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=9000, reload=True)

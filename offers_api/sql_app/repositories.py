@@ -3,14 +3,11 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
-
-    
-    
-    
 class OfferRepo:
     
     async def create(db: Session, offer: schemas.OfferCreate):
-            db_offer = models.Offer(id=offer.id, price=offer.price, items_in_stock=offer.items_in_stock, product_id=offer.product_id)
+            #db_offer = models.Offer(price=offer.price, items_in_stock=offer.items_in_stock, product_id=offer.product_id)
+            db_offer = models.Offer(product_id=offer.product_id)
             db.add(db_offer)
             db.commit()
             db.refresh(db_offer)

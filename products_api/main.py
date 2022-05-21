@@ -10,7 +10,7 @@ import uvicorn
 from typing import List,Optional
 from fastapi.encoders import jsonable_encoder
 import requests, json
-
+import os
 
 app = FastAPI(title="Sample FastAPI Application",
     description="Sample FastAPI Application with Swagger and Sqlalchemy",
@@ -31,27 +31,24 @@ def validation_exception_handler(request, err):
     base_error_message = f"Failed to execute: {request.method}: {request.url}"
     return JSONResponse(status_code=400, content={"message": f"{base_error_message}. Detail: {err}"})
 
-
-
-
-
-#PRODUCTS
-
 @app.post('/products', tags=["Product"], response_model=schemas.Product, status_code=201)
-async def create_product(product_request: schemas.ProductCreate, offer_request: schemas.OfferCreate,  db: Session = Depends(get_db)):
+async def create_product(product_request: schemas.ProductCreate, db: Session = Depends(get_db)):
     """
     Create an Product and store it in the database
     """
-    
+    base_url = os.getenv('BASE_URL')
+    print(f'========================{base_url}========================')
     db_product = ProductRepo.fetch_by_id(db, _id=product_request.id)
     if db_product:
         raise HTTPException(status_code=400, detail="Product already exists!")
      
-    # some_info = {'info':'some_info'}
-    # head = 'http://192.168.0.8:8000/' #IP and port of your server 
-    # # maybe in your case the ip is the localhost 
-    # requests.post(f'{head}/send_some_info', data=json.dumps(some_info))
     
+    head = 'http://127.0.0.1:9000' #IP and port of your server 
+    #requests.post(f'{head}/products/register', data=to_json(product_request.id))
+    requests.post(f'{head}/products/register', data=json.dumps(
+        {'product_id':product_request.id}
+        ))
+
     
     return await ProductRepo.create(db=db, product=product_request)
 

@@ -5,14 +5,12 @@ from pydantic import BaseModel
 
 class OfferBase(BaseModel):
     
-    price: int
-    items_in_stock: int
+    price: int = None
+    items_in_stock: int = None
     product_id: int
 
-class OfferCreate(OfferBase):
-    price: Optional[int] = 0
-    items_in_stock: Optional[int] = 0
-    product_id: Optional[int] = 0
+class OfferCreate(BaseModel):
+    product_id: int
 
 
 class Offer(OfferBase):
@@ -21,9 +19,6 @@ class Offer(OfferBase):
 
     class Config:
         orm_mode = True
-
-
-
 
 class ProductBase(BaseModel):
     name: str
@@ -41,9 +36,6 @@ class Product(ProductBase):
     
     class Config:
         orm_mode = True
-
-
-
 
 
 

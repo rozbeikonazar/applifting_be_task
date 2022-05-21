@@ -6,11 +6,11 @@ from pydantic import BaseModel
 
 class OfferBase(BaseModel):
     
-    price: int
-    items_in_stock: int
+    price: int = None
+    items_in_stock: int = None
     product_id: int
 
-class OfferCreate(OfferBase):
+class OfferCreate(BaseModel):
     product_id: int
 
 

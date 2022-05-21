@@ -8,8 +8,8 @@ from .db import Base
 class Offer(Base):
     __tablename__ = 'offers'
     id = Column(Integer, primary_key=True, index=True)
-    price = Column(Float(precision=2), nullable=False)
-    items_in_stock = Column(Integer)
+    price = Column(Float(precision=2), nullable=True)
+    items_in_stock = Column(Integer, nullable=True)
     product_id = Column(Integer, ForeignKey('products.id'), nullable=False) 
 
     def __repr__(self):
