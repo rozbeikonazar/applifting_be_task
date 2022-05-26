@@ -11,7 +11,7 @@ class Offer(Base):
     product_id = Column(Integer, ForeignKey('products.id'), nullable=False) 
 
     def __repr__(self):
-        return f'OffersModel(price={self.price}, items_in_stock={self.items_in_stock}'
+        return f'OffersModel(price={self.price}, items_in_stock={self.items_in_stock}, id={self.id})'
 
 
 class Product(Base):
@@ -19,8 +19,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(80), nullable=False, unique=True, index=True)
     description = Column(String(255))
-    offers =  relationship('Offer',
-                            cascade='all, delete-orphan')
+   
 
     def __repr__(self):
         return f'ProductModel(name={self.name}, '
