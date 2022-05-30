@@ -96,5 +96,4 @@ def get_token(token_request: schemas.APIKey):
         return schemas.Token(token=TOKEN)
     return {"message": "Invalid API Key"}
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", port=9000, reload=True)
+
