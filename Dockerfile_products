@@ -1,0 +1,8 @@
+FROM python:3.9-alpine
+WORKDIR /app
+COPY sql_app/ /app/sql_app
+COPY products_api/main.py /app/products_api/main.py
+COPY requirements.txt .
+COPY settings.py .
+ENV OFFERS_API_URL="offers_api:9000"
+RUN pip install -r requirements.txt
