@@ -1,64 +1,60 @@
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-import uvicorn
-from typing import List
-from fastapi_utils.tasks import repeat_every
-from fastapi_utils.session import FastAPISessionMaker
-import random
-import logging
+"Offers API"
 import sys
 import os
+import logging
+from typing import List
+import random
+from fastapi_utils.tasks import repeat_every
+#from fastapi_utils.session import FastAPISessionMaker
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+import uvicorn
+# pylint: disable=wrong-import-position
+# pylint: disable=import-error
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 from sql_app import models
-from sql_app.db import get_db, engine
-import sql_app.models as models
-import sql_app.schemas as schemas
+from sql_app.db import get_db, engine, SessionLocal
+from sql_app import schemas
 from sql_app.repositories import OfferRepo
-from sqlalchemy.orm import Session
-from settings import BASE_URL
+from settings import BASE_URL, TOKEN, API_KEY
+
+
+
+
 
 
 
 app = FastAPI(title="Sample FastAPI Application",
               description="Sample FastAPI Application with Swagger and Sqlalchemy",
               version="1.0.0",)
-
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 models.Base.metadata.create_all(bind=engine)
-token = '1sldsfk3jv;x"q3v[5-6gxcw123r'
-valid_api_key = '1asaf1KvawkrPdfsd35g'
-# BACKGROUND JOB
-database_uri = "sqlite:///../data.db"
-sessionmaker = FastAPISessionMaker(database_uri)
 
-
-#TODO add json encoder in set_price
 @app.on_event("startup")
-@repeat_every(seconds=60)  # 1 minute
+@repeat_every(seconds=60)  
 def set_price():
-    with sessionmaker.context_session() as db:
-        random_offer = OfferRepo.select_random_offer(db)
-        if random_offer:
-            random_offer.price = random.randint(1,100000)
-            OfferRepo.update(db=db,offer_data=random_offer)
-            logging.info(f'Change offer price with id {random_offer.id}. Price: {random_offer.price} ')
-        
-        else:
-            pass
+    "Background service to set price fo offers"
+    db_session = SessionLocal()
+    random_offer = OfferRepo.select_random_offer(db_session)
+    if random_offer:
+        random_offer.price = random.randint(1,100000)
+        OfferRepo.update(db=db_session,offer_data=random_offer)
+        logging.info("Change offer price with id %s. Price: %s",
+        random_offer.id, random_offer.price)
+    else:
+        print('no offers yet')
 
-        
 
 
 
 @app.exception_handler(Exception)
 def validation_exception_handler(request, err):
+    "Global exception handler"
     base_error_message = f"Failed to execute: {request.method}: {request.url}"
-    return JSONResponse(status_code=400, content={"message": f"{base_error_message}. Detail: {err}"})
-
- # OFFERS ------------------------------------------------------------------------------------
-
+    return JSONResponse(status_code=400, content={"message": f"{base_error_message}.Detail: {err}"})
 
 @app.get(f'{BASE_URL}', tags=["Offer"], response_model=List[schemas.Offer])
 def get_all_offers(_id: int = None, db: Session = Depends(get_db)):
@@ -71,8 +67,7 @@ def get_all_offers(_id: int = None, db: Session = Depends(get_db)):
 
         offers.append(db_offer)
         return offers
-    else:
-        return OfferRepo.fetch_all(db)
+    return OfferRepo.fetch_all(db)
 
 
 @app.get(f'/product/{{offer_id}}{BASE_URL}/', tags=["Offer"], response_model=schemas.Offer)
@@ -80,7 +75,6 @@ def get_offer(offer_id: int, db: Session = Depends(get_db)):
     """
     Get the Offer with the given ID provided by User stored in database
     """
-    # TODO Change Response Model. Delete Product_id from response
 
     db_offer = OfferRepo.fetch_by_id(db, offer_id)
     if db_offer is None:
@@ -90,20 +84,16 @@ def get_offer(offer_id: int, db: Session = Depends(get_db)):
 
 
 @app.post('/products/register', tags=['Offer'], response_model=schemas.Offer)
-async def create_offer(offer_request: schemas.OfferCreate, db: Session = Depends(get_db)):
-    print(
-        f'================================{offer_request}=================================')
-    # db_product = OfferRepo.fetch_by_id(db, _id=offer_request.product_id)
-    # if db_product:
-    #     raise HTTPException(status_code=400, detail="Offer already exists!")
-
-    return await OfferRepo.create(db=db, offer=offer_request)
+def create_offer(offer_request: schemas.OfferCreate, db: Session = Depends(get_db)):
+    "Register product"
+    return OfferRepo.create(db=db, offer=offer_request)
 
 
 @app.post('/token', tags=['Offer'], response_model=schemas.Token)
-async def get_token(token_request: schemas.APIKey):
-    if token_request.api_key == valid_api_key:
-        return schemas.Token(token=token)
+def get_token(token_request: schemas.APIKey):
+    "Check API key and return token"
+    if token_request.api_key == API_KEY:
+        return schemas.Token(token=TOKEN)
     return {"message": "Invalid API Key"}
 
 if __name__ == "__main__":
