@@ -9,29 +9,24 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi_utils.tasks import repeat_every
-import uvicorn
 from sqlalchemy.orm import Session
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-# pylint: disable=import-error
-# pylint: disable=wrong-import-position
+from settings import API_KEY, BASE_URL
 from sql_app import models
 from sql_app.db import get_db, engine, SessionLocal
 from sql_app import schemas
 from sql_app.repositories import ProductRepo, OfferRepo
-from settings import API_KEY
+# pylint: disable=import-error
+# pylint: disable=wrong-import-position
 
 
-app = FastAPI(title="Sample FastAPI Application",
-              description="Sample FastAPI Application with Swagger and Sqlalchemy",
-              version="1.0.0",)
+
+
+app = FastAPI()
 logging.basicConfig(level=logging.DEBUG)
-OFFERS_API_URL = os.getenv("OFFERS_API_URL", '127.0.0.1:9000')
-
 models.Base.metadata.create_all(bind=engine)
-
-token = requests.post(f'http://{OFFERS_API_URL}/token',
-                      data=json.dumps({'api_key': API_KEY})).json()['token']
+API_URL = os.getenv("API_URL", '0.0.0.0:8000')
+token = requests.post(f'http://{API_URL}/token',
+                     data=json.dumps({'api_key': API_KEY})).json()['token']
 
 
 @app.on_event("startup")
@@ -62,11 +57,11 @@ def create_product(product_request: schemas.ProductCreate, db: Session = Depends
     if db_product:
         raise HTTPException(status_code=400, detail="Product already exists!")
     new_product = ProductRepo.create(db=db, product=product_request)  
-    requests.post(f'http://{OFFERS_API_URL}/products/register', data=json.dumps(
-            {'product_id': new_product.id,
-            'token': token
-            }
-        ))
+    # requests.post(f'http://{API_URL}/products/register', data=json.dumps(
+    #         {'product_id': new_product.id,
+    #         #'token': token
+    #         }
+    #     ))
 
     return new_product
 
@@ -127,3 +122,31 @@ def update_product(product_id: int,product_request: schemas.Product, db: Session
             status_code=400, detail="Product not found with the given ID")
 
 
+#OFFERS API
+
+
+@app.get(f'{BASE_URL}', tags=["Offer"], response_model=List[schemas.Offer])
+def get_all_offers(_id: int = None, db: Session = Depends(get_db)):
+    """
+    Get all the Offers stored in database
+    """
+    if _id:
+        offers = []
+        db_offer = OfferRepo.fetch_by_id(db, _id)
+
+        offers.append(db_offer)
+        return offers
+    return OfferRepo.fetch_all(db)
+
+
+@app.get(f'/product/{{offer_id}}{BASE_URL}/', tags=["Offer"], response_model=schemas.Offer)
+def get_offer(offer_id: int, db: Session = Depends(get_db)):
+    """
+    Get the Offer with the given ID provided by User stored in database
+    """
+
+    db_offer = OfferRepo.fetch_by_id(db, offer_id)
+    if db_offer is None:
+        raise HTTPException(
+            status_code=404, detail="Offer not found with the given ID")
+    return db_offer

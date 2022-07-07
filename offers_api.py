@@ -2,14 +2,11 @@
 import sys
 import os
 import logging
-from typing import List
 import random
 from fastapi_utils.tasks import repeat_every
-#from fastapi_utils.session import FastAPISessionMaker
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-import uvicorn
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,19 +15,11 @@ from sql_app import models
 from sql_app.db import get_db, engine, SessionLocal
 from sql_app import schemas
 from sql_app.repositories import OfferRepo
-from settings import BASE_URL, TOKEN, API_KEY
+from settings import TOKEN, API_KEY
+from main import app
 
-
-
-
-
-
-
-app = FastAPI(title="Sample FastAPI Application",
-              description="Sample FastAPI Application with Swagger and Sqlalchemy",
-              version="1.0.0",)
+#app = FastAPI()
 logging.basicConfig(level=logging.DEBUG)
-
 models.Base.metadata.create_all(bind=engine)
 
 @app.on_event("startup")
@@ -49,38 +38,11 @@ def set_price():
 
 
 
-
 @app.exception_handler(Exception)
 def validation_exception_handler(request, err):
     "Global exception handler"
     base_error_message = f"Failed to execute: {request.method}: {request.url}"
     return JSONResponse(status_code=400, content={"message": f"{base_error_message}.Detail: {err}"})
-
-@app.get(f'{BASE_URL}', tags=["Offer"], response_model=List[schemas.Offer])
-def get_all_offers(_id: int = None, db: Session = Depends(get_db)):
-    """
-    Get all the Offers stored in database
-    """
-    if _id:
-        offers = []
-        db_offer = OfferRepo.fetch_by_id(db, _id)
-
-        offers.append(db_offer)
-        return offers
-    return OfferRepo.fetch_all(db)
-
-
-@app.get(f'/product/{{offer_id}}{BASE_URL}/', tags=["Offer"], response_model=schemas.Offer)
-def get_offer(offer_id: int, db: Session = Depends(get_db)):
-    """
-    Get the Offer with the given ID provided by User stored in database
-    """
-
-    db_offer = OfferRepo.fetch_by_id(db, offer_id)
-    if db_offer is None:
-        raise HTTPException(
-            status_code=404, detail="Offer not found with the given ID")
-    return db_offer
 
 
 @app.post('/products/register', tags=['Offer'], response_model=schemas.Offer)
@@ -94,6 +56,5 @@ def get_token(token_request: schemas.APIKey):
     "Check API key and return token"
     if token_request.api_key == API_KEY:
         return schemas.Token(token=TOKEN)
-    return {"message": "Invalid API Key"}
-
-
+    raise HTTPException(
+            status_code=404, detail="API key is incorrect")
