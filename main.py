@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi_utils.tasks import repeat_every
 from sqlalchemy.orm import Session
+from offers_api import OffersAPI
 from settings import API_KEY, BASE_URL
 from sql_app import models
 from sql_app.db import get_db, engine, SessionLocal
@@ -25,9 +26,7 @@ app = FastAPI()
 logging.basicConfig(level=logging.DEBUG)
 models.Base.metadata.create_all(bind=engine)
 API_URL = os.getenv("API_URL", '0.0.0.0:8000')
-token = requests.post(f'http://{API_URL}/token',
-                     data=json.dumps({'api_key': API_KEY})).json()['token']
-
+token = OffersAPI.get_token(token_request=json.dumps({'api_key': API_KEY})).dict()['token']
 
 @app.on_event("startup")
 @repeat_every(seconds=60)
@@ -62,6 +61,9 @@ def create_product(product_request: schemas.ProductCreate, db: Session = Depends
     #         #'token': token
     #         }
     #     ))
+    OffersAPI.create_offer(offer_request=json.dumps({'product_id': new_product.id,
+    'token': token})
+    , db=db)
 
     return new_product
 
