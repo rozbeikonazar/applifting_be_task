@@ -9,7 +9,7 @@ class OfferRepo:
     "Creating CRUD operations for Offers API model"
     def create(db: Session, offer: schemas.OfferCreate):
         "Create Offer in DataBase"
-        db_offer = models.Offer(product_id=offer.product_id)
+        db_offer = models.Offer(product_id=offer['product_id'])
         db.add(db_offer)
         db.commit()
         db.refresh(db_offer)
@@ -77,3 +77,16 @@ class ProductRepo:
         db.commit()
         return updated_product
     
+class UserRepo:
+
+    def create(db: Session, username: schemas.RegisterUser, password: schemas.RegisterUser):
+        "Create user in DataBase"
+        db_user = models.User(username=username,password=password)
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+
+    def fetch_by_name(db: Session, username):
+        "Select User by username from DataBase"
+        return db.query(models.User).filter(models.User.username == username).first()

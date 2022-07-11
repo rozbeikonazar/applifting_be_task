@@ -22,3 +22,12 @@ class Product(Base):
     description = Column(String(255))
     def __repr__(self):
         return f'ProductModel(name={self.name}, '
+
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True,index=True)
+    username = Column(String(32), nullable=False, unique=True, index=True)
+    password = Column(String(32), nullable=False)
+    def __repr__(self):
+        return f'UsersModel(username={self.username})'

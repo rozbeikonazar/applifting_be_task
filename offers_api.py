@@ -17,7 +17,6 @@ from sql_app.db import get_db, engine, SessionLocal
 from sql_app import schemas
 from sql_app.repositories import OfferRepo
 from settings import TOKEN, API_KEY
-#from main import app
 
 logging.basicConfig(level=logging.DEBUG)
 

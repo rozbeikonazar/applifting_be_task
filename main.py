@@ -1,21 +1,24 @@
 'Products API'
+from datetime import timedelta
 import sys
 import os
 import logging
 import json
 from typing import List, Optional
 import requests
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi_utils.tasks import repeat_every
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from auth.auth import authenticate_user, create_access_token, get_current_user, get_password_hash
 from offers_api import OffersAPI
-from settings import API_KEY, BASE_URL
+from settings import ACCESS_TOKEN_EXPIRE_MINUTES, API_KEY, BASE_URL
 from sql_app import models
 from sql_app.db import get_db, engine, SessionLocal
 from sql_app import schemas
-from sql_app.repositories import ProductRepo, OfferRepo
+from sql_app.repositories import ProductRepo, OfferRepo, UserRepo
 # pylint: disable=import-error
 # pylint: disable=wrong-import-position
 
@@ -47,8 +50,37 @@ def validation_exception_handler(request, err):
     return JSONResponse(status_code=400, content={"message": f"{base_error_message}.Detail: {err}"})
 
 
+@app.post('/register', tags=['Auth'])
+def register(user_request: schemas.RegisterUser, db: Session = Depends(get_db)):
+    user_db = UserRepo.fetch_by_name(db=db, username=user_request.username)
+    if user_db:
+        raise HTTPException(status_code=400, detail="User already exists!")
+    hashed_password = get_password_hash(user_request.password) 
+    new_user = UserRepo.create(db=db, username=user_request.username, password=hashed_password)
+    return f'Succesfully created user with username {new_user.username}'
+
+
+@app.post("/login",tags=['Auth'], response_model=schemas.AccessToken)
+def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(db=db, username=form_data.username, password=form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+
+
+
 @app.post('/products', tags=["Product"], response_model=schemas.Product, status_code=201)
-def create_product(product_request: schemas.ProductCreate, db: Session = Depends(get_db)):
+def create_product(product_request: schemas.ProductCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
     Create an Product and store it in the database
     """
@@ -56,14 +88,8 @@ def create_product(product_request: schemas.ProductCreate, db: Session = Depends
     if db_product:
         raise HTTPException(status_code=400, detail="Product already exists!")
     new_product = ProductRepo.create(db=db, product=product_request)  
-    # requests.post(f'http://{API_URL}/products/register', data=json.dumps(
-    #         {'product_id': new_product.id,
-    #         #'token': token
-    #         }
-    #     ))
-    OffersAPI.create_offer(offer_request=json.dumps({'product_id': new_product.id,
-    'token': token})
-    , db=db)
+    OffersAPI.create_offer(offer_request=
+    {'product_id': new_product.id,'token': token},db=db)
 
     return new_product
 
@@ -96,7 +122,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
 
 @app.delete('/products/{product_id}', tags=["Product"])
-def delete_product(product_id: int, db: Session = Depends(get_db)):
+def delete_product(product_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
     Delete the Product with the given ID provided by User stored in database
     """
@@ -109,7 +135,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
 
 
 @app.put('/products/{product_id}', tags=["Product"], response_model=schemas.Product)
-def update_product(product_id: int,product_request: schemas.Product, db: Session = Depends(get_db)):
+def update_product(product_id: int,product_request: schemas.Product, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
     Update an Product stored in the database
     """
@@ -122,9 +148,6 @@ def update_product(product_id: int,product_request: schemas.Product, db: Session
     else:
         raise HTTPException(
             status_code=400, detail="Product not found with the given ID")
-
-
-#OFFERS API
 
 
 @app.get(f'{BASE_URL}', tags=["Offer"], response_model=List[schemas.Offer])

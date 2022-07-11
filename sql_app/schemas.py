@@ -1,5 +1,5 @@
 "Create Pydantic schemas"
-from typing import Optional
+from typing import Optional, Union
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
 
@@ -51,3 +51,21 @@ class APIKey(BaseModel):
 class Token(BaseModel):
     "Create or Read Token"
     token: str
+
+class User(BaseModel):
+    username: str
+    password: str
+    class Config:
+        orm_mode = True
+
+class RegisterUser(BaseModel):
+    username: str
+    password: str
+
+
+class AccessToken(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None
