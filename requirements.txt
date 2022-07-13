@@ -8,3 +8,4 @@ SQLAlchemy==1.4.23
 sqlparse==0.4.2
 starlette==0.14.2
 uvicorn==0.15.0
+fastapi_utils==0.2.1

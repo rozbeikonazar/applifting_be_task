@@ -1,5 +1,6 @@
 'Products API'
 from datetime import timedelta
+import random
 import sys
 import os
 import logging
@@ -37,11 +38,22 @@ def get_last_offer():
     "Background service to set price fo offers"
     db_session = SessionLocal()
     last_offer = OfferRepo.fetch_all(db_session)[-1]
-
     logging.info('New/Updated offer is: id=%s, items_in_stock=%s, price=%s',
     last_offer.id, last_offer.items_in_stock, last_offer.price)
 
-
+@app.on_event("startup")
+@repeat_every(seconds=60)  
+def set_price():
+    "Background service to set price fo offers"
+    db_session = SessionLocal()
+    random_offer = OfferRepo.select_random_offer(db_session)
+    if random_offer:
+        random_offer.price = random.randint(1,100000)
+        OfferRepo.update(db=db_session,offer_data=random_offer)
+        logging.info("Change offer price with id %s. Price: %s",
+        random_offer.id, random_offer.price)
+    else:
+        print('no offers yet')
 
 @app.exception_handler(Exception)
 def validation_exception_handler(request, err):
@@ -57,10 +69,10 @@ def register(user_request: schemas.RegisterUser, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="User already exists!")
     hashed_password = get_password_hash(user_request.password) 
     new_user = UserRepo.create(db=db, username=user_request.username, password=hashed_password)
-    return f'Succesfully created user with username {new_user.username}'
+    return {f'Succesfully created user with username {new_user.username}'}
 
 
-@app.post("/login",tags=['Auth'], response_model=schemas.AccessToken)
+@app.post("/login", tags=['Auth'], response_model=schemas.AccessToken)
 def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(db=db, username=form_data.username, password=form_data.password)
     if not user:
@@ -103,6 +115,8 @@ def get_all_products(name: Optional[str] = None, db: Session = Depends(get_db)):
     if name:
         products = []
         db_product = ProductRepo.fetch_by_name(db, name)
+        if db_product is None:
+            raise HTTPException(status_code=404, detail='Product not found with the given name')
         products.append(db_product)
         return products
     else:
@@ -134,8 +148,8 @@ def delete_product(product_id: int, db: Session = Depends(get_db), current_user:
     return {'message': f'Product with id {product_id} was successfully deleted'}
 
 
-@app.put('/products/{product_id}', tags=["Product"], response_model=schemas.Product)
-def update_product(product_id: int,product_request: schemas.Product, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+@app.put('/products/{product_id}', tags=["Product"], response_model=schemas.ProductBase)
+def update_product(product_id: int,product_request: schemas.ProductBase, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
     Update an Product stored in the database
     """
@@ -150,6 +164,7 @@ def update_product(product_id: int,product_request: schemas.Product, db: Session
             status_code=400, detail="Product not found with the given ID")
 
 
+
 @app.get(f'{BASE_URL}', tags=["Offer"], response_model=List[schemas.Offer])
 def get_all_offers(_id: int = None, db: Session = Depends(get_db)):
     """
@@ -158,7 +173,8 @@ def get_all_offers(_id: int = None, db: Session = Depends(get_db)):
     if _id:
         offers = []
         db_offer = OfferRepo.fetch_by_id(db, _id)
-
+        if db_offer is None:
+            raise HTTPException(status_code=404, detail='Offer not found with the given name')
         offers.append(db_offer)
         return offers
     return OfferRepo.fetch_all(db)
@@ -175,3 +191,5 @@ def get_offer(offer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=404, detail="Offer not found with the given ID")
     return db_offer
+
+#TODO Добавить create_offer по product_id 

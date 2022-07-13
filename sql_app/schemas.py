@@ -1,5 +1,5 @@
 "Create Pydantic schemas"
-from typing import Optional, Union
+from typing import List, Optional, Union
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
 
@@ -20,6 +20,7 @@ class Offer(BaseModel):
     id: int
     price: int = None
     items_in_stock: int = None
+    product_id: int
     class Config:
         "Configurations to Pydantic"
         orm_mode = True
@@ -29,6 +30,7 @@ class ProductBase(BaseModel):
     "Create or read data from Products API"
     name: str
     description: Optional[str] = None
+    
 
 
 class ProductCreate(ProductBase):
@@ -38,7 +40,7 @@ class ProductCreate(ProductBase):
 
 class Product(ProductBase):
     "Read data for Products API"
-
+    offers: List[Offer] = []
     class Config:
         "Configurations to Pydantic"
         orm_mode = True

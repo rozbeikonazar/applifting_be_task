@@ -1,38 +1,20 @@
 "Offers API"
 import json
-import sys
-import os
 import logging
 import random
 from fastapi_utils.tasks import repeat_every
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-from sql_app import models
-from sql_app.db import get_db, engine, SessionLocal
+from sql_app.db import get_db, SessionLocal
 from sql_app import schemas
 from sql_app.repositories import OfferRepo
 from settings import TOKEN, API_KEY
 
 logging.basicConfig(level=logging.DEBUG)
 
-# @app.on_event("startup")
-# @repeat_every(seconds=60)  
-# def set_price():
-#     "Background service to set price fo offers"
-#     db_session = SessionLocal()
-#     random_offer = OfferRepo.select_random_offer(db_session)
-#     if random_offer:
-#         random_offer.price = random.randint(1,100000)
-#         OfferRepo.update(db=db_session,offer_data=random_offer)
-#         logging.info("Change offer price with id %s. Price: %s",
-#         random_offer.id, random_offer.price)
-#     else:
-#         print('no offers yet')
 
 
 class OffersAPI:
