@@ -9,7 +9,7 @@ class OfferRepo:
     "Creating CRUD operations for Offers API model"
     def create(db: Session, offer: schemas.OfferCreate):
         "Create Offer in DataBase"
-        db_offer = models.Offer(product_id=offer['product_id'])
+        db_offer = models.Offer(product_id=offer.product_id)
         db.add(db_offer)
         db.commit()
         db.refresh(db_offer)

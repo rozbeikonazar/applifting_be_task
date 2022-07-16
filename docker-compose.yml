@@ -1,22 +1,9 @@
 version: '3.3'
 services:
-  offers_api:
+  api:
     build: 
       context: .
-      dockerfile: Dockerfile_offers_api
+      dockerfile: Dockerfile_main
     ports:
       - 9000:9000
-    command: uvicorn offers_api.main:app --host 0.0.0.0 --port 9000
-    volumes:
-      - "./data/data.db:/data/data.db"
-  products_api:
-    build: 
-      context: .
-      dockerfile: Dockerfile_products
-    ports:
-      - 8000:8000
-    depends_on:
-      - offers_api
-    command: uvicorn products_api.main:app --host 0.0.0.0 --port 8000
-    volumes:
-      - "./data/data.db:/data/data.db"
+    command: uvicorn main:app --host 0.0.0.0 --port 9000

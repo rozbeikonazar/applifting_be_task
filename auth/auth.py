@@ -19,13 +19,22 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def verify_password(plain_password, hashed_password):
+    """
+    Verify password
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password):
+    """
+    Hash password
+    """
     return pwd_context.hash(password)
 
 def authenticate_user(username: str, password: str, db: Session = Depends(get_db)):
+    """
+    Authenticate user
+    """
     user_db = UserRepo.fetch_by_name(db=db, username=username)
     if not user_db:
         return False
@@ -35,6 +44,9 @@ def authenticate_user(username: str, password: str, db: Session = Depends(get_db
 
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+    """
+    Create access token
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -49,6 +61,9 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    """
+    Check if user is authenticated
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
