@@ -24,11 +24,12 @@ class Product(Base):
     description = Column(String(255))
     offers =  relationship('Offer',
                             cascade='all, delete-orphan')
-    prices = relationship('PriceLogs')
+    prices = relationship('PriceLogs', cascade='all, delete-orphan')
     def __repr__(self):
         return f'ProductModel(name={self.name}, '
 
 class PriceLogs(Base):
+    "Creating model to track price history"
     __tablename__ = 'prices'
     id = Column(Integer, primary_key=True, index=True)
     price = Column(Float)
@@ -37,6 +38,7 @@ class PriceLogs(Base):
 
 
 class User(Base):
+    "Creating model to store Users "
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True,index=True)
     username = Column(String(32), nullable=False, unique=True, index=True)

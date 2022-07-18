@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 # pylint: disable=wrong-import-position
 # pylint: disable=import-error
-from sql_app.db import SessionLocal, get_db
+from sql_app.db import get_db
 from sql_app import schemas
 from sql_app.repositories import OfferRepo
 from settings import BASE_URL, TOKEN, API_KEY

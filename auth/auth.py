@@ -20,20 +20,20 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def verify_password(plain_password, hashed_password):
     """
-    Verify password
+    Verify hashed password with plain password
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password):
     """
-    Hash password
+    Hash plain password
     """
     return pwd_context.hash(password)
 
 def authenticate_user(username: str, password: str, db: Session = Depends(get_db)):
     """
-    Authenticate user
+    Checks if the username and password are valid
     """
     user_db = UserRepo.fetch_by_name(db=db, username=username)
     if not user_db:

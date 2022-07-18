@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel
 
 
+
 class OfferBase(BaseModel):
     "Create or read data from Offers API"
     price: int = None
@@ -50,19 +51,30 @@ class Token(BaseModel):
     token: str
 
 class User(BaseModel):
+    "Read User credentials"
     username: str
     password: str
     class Config:
+        "Configurations to Pydantic"
         orm_mode = True
 
-class RegisterUser(BaseModel):
-    username: str
-    password: str
+class RegisterUser(User):
+    "Create User"
 
 
 class AccessToken(BaseModel):
+    "Read or Create AccessToken"
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
+    "Read TokenData"
     username: Union[str, None] = None
+
+
+class PriceHistory(BaseModel):
+    "Read Price history"
+    price_history: List
+    class Config:
+        "Configurations to Pydantic"
+        orm_mode = True

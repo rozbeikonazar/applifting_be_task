@@ -90,3 +90,20 @@ class UserRepo:
     def fetch_by_name(db: Session, username):
         "Select User by username from DataBase"
         return db.query(models.User).filter(models.User.username == username).first()
+
+class PriceRepo:
+    def get_price_history(db: Session, product_id):
+        db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
+        price_history = []
+        if db_product:
+            for price in db_product.prices:
+                price_history.append(price.price)
+            return price_history
+    def get_price_change(db: Session, from_time, to_time, product_id):
+        db_product = db.query(models.PriceLogs).filter(models.PriceLogs.product_id == product_id).first()
+        if db_product:
+            first_date = db.query(models.PriceLogs).filter(models.PriceLogs.time == from_time).first().price
+            last_date = db.query(models.PriceLogs).filter(models.PriceLogs.time == to_time).first().price
+            if first_date and last_date:
+                return round(((last_date-first_date)/first_date) * 100, 1)
+        return False

@@ -1,34 +1,24 @@
+
 from datetime import timedelta
-from math import prod
-import random
-import logging
 import json
 from typing import List, Optional
 import requests
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from fastapi_utils.tasks import repeat_every
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from auth.auth import authenticate_user, create_access_token, get_current_user, get_password_hash
 from settings import ACCESS_TOKEN_EXPIRE_MINUTES, API_KEY, API_URL
 from sql_app import models
-from sql_app.db import get_db, SessionLocal
+from sql_app.db import get_db
 from sql_app import schemas
-from sql_app.repositories import ProductRepo, OfferRepo, UserRepo
+from sql_app.repositories import PriceRepo, ProductRepo, OfferRepo, UserRepo
 from fastapi.responses import JSONResponse
 # pylint: disable=import-error
 # pylint: disable=wrong-import-position
 
 products_api_app = FastAPI()
-
-
-@products_api_app.on_event('startup')
-@repeat_every(seconds=60)
-def hello_world():
-    print('Hello wolrd!')
-
 
 
 @products_api_app.exception_handler(Exception)
@@ -38,10 +28,11 @@ def validation_exception_handler(request, err):
     return JSONResponse(status_code=400, content={"message": f"{base_error_message}.Detail: {err}"})
 
 
-
-
 @products_api_app.post('/register', tags=['Auth'])
 def register(user_request: schemas.RegisterUser, db: Session = Depends(get_db)):
+    """
+    Register User and store it in the database
+    """
     user_db = UserRepo.fetch_by_name(db=db, username=user_request.username)
     if user_db:
         raise HTTPException(status_code=400, detail="User already exists!")
@@ -52,6 +43,9 @@ def register(user_request: schemas.RegisterUser, db: Session = Depends(get_db)):
 
 @products_api_app.post("/login", tags=['Auth'], response_model=schemas.AccessToken)
 def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Login to get Access Token
+    """
     user = authenticate_user(db=db, username=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
@@ -76,8 +70,6 @@ def create_product(product_request: schemas.ProductCreate, db: Session = Depends
     """
     Create an Product and store it in the database
     """
-    
-    
     db_product = ProductRepo.fetch_by_name(db, name=product_request.name)
     if db_product:
         raise HTTPException(status_code=400, detail="Product already exists!")
@@ -151,3 +143,23 @@ def update_product(product_id: int,product_request: schemas.ProductBase, db: Ses
     else:
         raise HTTPException(
             status_code=400, detail="Product not found with the given ID")
+
+@products_api_app.get('/products/{product_id}/price_history', tags=["Price"], response_model=schemas.PriceHistory )
+def get_price_history(product_id: int, db: Session = Depends(get_db)):
+    """
+    Returns the trend in offer prices
+    """
+    price_history = PriceRepo.get_price_history(db=db, product_id=product_id)
+    if price_history:
+        return {"price_history": [price_history]}
+    raise HTTPException(
+            status_code=404, detail="Product not found with the given ID")
+
+@products_api_app.get('/products/{product_id}/price_change', tags=["Price"])
+def get_price_change(from_time: str, to_time: str, product_id: int, db: Session = Depends(get_db)):
+    """
+    Returns percentual rise/fall for a chosen period of time
+    """
+    percentual_change = PriceRepo.get_price_change(db=db, from_time=from_time, to_time=to_time, product_id=product_id)
+    if percentual_change:
+        return {"message": f"Price changed on {percentual_change}%"}

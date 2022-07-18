@@ -4,13 +4,14 @@ import logging
 from fastapi import FastAPI
 from fastapi_utils.tasks import repeat_every
 from sql_app import models
-from sql_app.db import get_db, engine, SessionLocal
+from sql_app.db import engine, SessionLocal
 from sql_app.repositories import OfferRepo
 # pylint: disable=import-error
 # pylint: disable=wrong-import-position
 from offers_api import offers_api_app
 from products_api import products_api_app
 import sqlite3
+from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 app.mount("/api/v1",products_api_app)
@@ -56,10 +57,15 @@ def set_trigger():
     )
     VALUES(
         new.price,
-        DATETIME('NOW'),
+        strftime('%Y-%m-%d %H:%M', DATETIME('NOW', 'localtime')),
         old.product_id
     
     ) ;
     END;
 """)
     con.commit()
+
+
+@app.get('/')
+def redirect():
+    return RedirectResponse("/api/v1/docs",status_code=301)
