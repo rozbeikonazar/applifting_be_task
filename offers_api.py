@@ -3,12 +3,10 @@ import logging
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-# pylint: disable=wrong-import-position
-# pylint: disable=import-error
+from settings import API_KEY, BASE_URL, TOKEN
 from sql_app.db import get_db
 from sql_app import schemas
 from sql_app.repositories import OfferRepo
-from settings import BASE_URL, TOKEN, API_KEY
 logging.basicConfig(level=logging.DEBUG)
 
 offers_api_app = FastAPI()
@@ -21,7 +19,7 @@ def validation_exception_handler(request, err):
     return JSONResponse(status_code=400, content={"message": f"{base_error_message}.Detail: {err}"})
 
 
-@offers_api_app.post('/products/register', tags=['Auth'], response_model=schemas.Offer)
+@offers_api_app.post('/products/register', tags=['Offer'], response_model=schemas.Offer)
 def register_product(offer_request: schemas.OfferCreate, db: Session = Depends(get_db)):
     "Register product"
     return OfferRepo.create(db=db, offer=offer_request)

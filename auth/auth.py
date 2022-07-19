@@ -1,22 +1,39 @@
-from fastapi import Depends
-from passlib.context import CryptContext
-from jose import jwt
-from settings import ALGORITHM, SECRET_KEY
-from sqlalchemy.orm import Session
+"Authentication"
+import json
 from typing import Union
 from datetime import datetime, timedelta
-from sql_app.db import get_db
-from sql_app.repositories import UserRepo
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from passlib.context import CryptContext
+import requests
+from settings import ALGORITHM, SECRET_KEY, API_URL, API_KEY
+from sqlalchemy.orm import Session
+from sql_app.repositories import UserRepo
 from sql_app.schemas import TokenData
 from sql_app.db import get_db
-from settings import ALGORITHM, SECRET_KEY
+from jose import JWTError, jwt
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+
+class TokenHandler:
+    """
+    Token Handler
+    """
+    def __init__(self):
+        self.token_value = None
+    @property
+    def token(self):
+        """
+        Return token
+        """
+        if self.token_value is None:
+            print('ZA RABOTU')
+            self.token_value = requests.post(f'http://{API_URL}/api/v1/auth',
+                data=json.dumps({'api_key': API_KEY})).json()['token']
+        return self.token_value
 
 def verify_password(plain_password, hashed_password):
     """
@@ -75,8 +92,8 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
+    except JWTError as jwt_err:
+        raise credentials_exception from jwt_err
     user = UserRepo.fetch_by_name(db=db, username=token_data.username)
     if user is None:
         raise credentials_exception

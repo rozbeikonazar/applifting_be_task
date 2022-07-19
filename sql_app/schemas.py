@@ -26,13 +26,9 @@ class ProductBase(BaseModel):
     "Create or read data from Products API"
     name: str
     description: Optional[str] = None
-    
-
 
 class ProductCreate(ProductBase):
     "Create data for Products API"
-    
-
 
 class Product(ProductBase):
     "Read data for Products API"

@@ -1,7 +1,8 @@
 # applifting_be_task
-To start my project, first you need to install dependencies from requirements.txt using this command  pip install -r requirements.txt. Then you need to run Offers API using this command in directiory offers_api: uvicorn main:app --host 0.0.0.0 --port 9000.
-And after this run Products API using this command in directiory products_api: uvicorn main:app --host 0.0.0.0 --port 8000
+REST API JSON Python microservice which allows users to browse a product catalog and which automatically updates prices from the offer service
 
-In products_api/test_main.py in function test_create_product I have used creation directly through database, not through endpoint, because in Offers API I have function that register product. 
-
-In offers_api/test_main.py I asserted in test functions only response code 200, because my background service is changing price every minute.
+To start my project, first you need to install dependencies from requirements.txt using this command  pip install -r requirements.txt. Then you need to run App using this command: uvicorn main:app --host 0.0.0.0 --port 9000.
+Or you can start project with docker-compose.
+The main page can be accessed by this link "/api/v1/products-crud/docs"
+To check test_main.py You should first start server with commands above.
+Also I deployed project on Heroku here is a link: http://appliftingtask.herokuapp.com/

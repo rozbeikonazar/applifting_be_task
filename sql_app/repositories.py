@@ -18,8 +18,7 @@ class OfferRepo:
     def fetch_by_id(db: Session, _id:int):
         "Select Offer by ID from DataBase"
         return db.query(models.Offer).filter(models.Offer.id == _id).first()
-
-    
+ 
     def fetch_all(db: Session, skip: int = 0, limit: int = 100):
         "Select all Offers from DataBase"
         return db.query(models.Offer).offset(skip).limit(limit).all()
@@ -52,7 +51,7 @@ class ProductRepo:
         db.add(db_product)
         db.commit()
         db.refresh(db_product)
-        return db_product
+        return db_product           
     
     def fetch_by_id(db: Session, _id):
         "Select Product by ID from DataBase"
@@ -71,6 +70,7 @@ class ProductRepo:
         db_product = db.query(models.Product).filter_by(id=product_id).first()
         db.delete(db_product)
         db.commit()    
+    
     def update(db: Session,product_data):
         "Update Product with given ID in Database"
         updated_product = db.merge(product_data)
@@ -78,7 +78,7 @@ class ProductRepo:
         return updated_product
     
 class UserRepo:
-
+    "Creating CRUD operations for Users model"
     def create(db: Session, username: schemas.RegisterUser, password: schemas.RegisterUser):
         "Create user in DataBase"
         db_user = models.User(username=username,password=password)
@@ -92,14 +92,19 @@ class UserRepo:
         return db.query(models.User).filter(models.User.username == username).first()
 
 class PriceRepo:
+    "Creating operations for Price Model"
     def get_price_history(db: Session, product_id):
+        """Returns a list of prices for the specified product_id"""
         db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
         price_history = []
         if db_product:
             for price in db_product.prices:
                 price_history.append(price.price)
             return price_history
+        return False
+    
     def get_price_change(db: Session, from_time, to_time, product_id):
+        """Returns a percentage changes for the specified product_id and time"""
         db_product = db.query(models.PriceLogs).filter(models.PriceLogs.product_id == product_id).first()
         if db_product:
             first_date = db.query(models.PriceLogs).filter(models.PriceLogs.time == from_time).first().price

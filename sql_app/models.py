@@ -1,7 +1,8 @@
 "Creating a database models"
 from sqlalchemy import Column, ForeignKey, Integer, String, Float
-from .db import Base
 from sqlalchemy.orm import relationship
+from .db import Base
+
 
 
 
@@ -11,8 +12,7 @@ class Offer(Base):
     id = Column(Integer, primary_key=True, index=True)
     price = Column(Float(precision=2), nullable=True)
     items_in_stock = Column(Integer, nullable=True)
-    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
-    
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)   
     def __repr__(self):
         return f'OfferModel(price={self.price}, items_in_stock={self.items_in_stock}, id={self.id})'
 
@@ -45,4 +45,3 @@ class User(Base):
     password = Column(String(64), nullable=False)
     def __repr__(self):
         return f'UsersModel(username={self.username})'
-

@@ -1,4 +1,4 @@
-
+"Products API"
 from datetime import timedelta
 import json
 from typing import List, Optional
@@ -8,18 +8,16 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from auth.auth import authenticate_user, create_access_token, get_current_user, get_password_hash
-from settings import ACCESS_TOKEN_EXPIRE_MINUTES, API_KEY, API_URL
+from auth.auth import authenticate_user, create_access_token, get_current_user, get_password_hash, TokenHandler
+from settings import ACCESS_TOKEN_EXPIRE_MINUTES, API_URL
 from sql_app import models
 from sql_app.db import get_db
 from sql_app import schemas
-from sql_app.repositories import PriceRepo, ProductRepo, OfferRepo, UserRepo
-from fastapi.responses import JSONResponse
-# pylint: disable=import-error
-# pylint: disable=wrong-import-position
+from sql_app.repositories import PriceRepo, ProductRepo, UserRepo
+# pylint: disable=unused-argument
 
 products_api_app = FastAPI()
-
+token_handler = TokenHandler()
 
 @products_api_app.exception_handler(Exception)
 def validation_exception_handler(request, err):
@@ -58,7 +56,7 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     content = {"access_token": access_token, "token_type": "bearer"}
-    headers = {'Authorization': 'Bearer {}'.format(access_token)}
+    headers = {'Authorization': f'Bearer {access_token}'}
     return JSONResponse(content=content, headers=headers)
 
 
@@ -74,10 +72,8 @@ def create_product(product_request: schemas.ProductCreate, db: Session = Depends
     if db_product:
         raise HTTPException(status_code=400, detail="Product already exists!")
     new_product = ProductRepo.create(db=db, product=product_request)  
-    token = requests.post(f'http://{API_URL}/api/v2/auth',
-                      data=json.dumps({'api_key': API_KEY})).json()['token']
-
-    requests.post(f'http://{API_URL}/api/v2/products/register', data=json.dumps(
+    token = token_handler.token
+    requests.post(f'http://{API_URL}/api/v1/products/register', data=json.dumps(
             {'product_id': new_product.id,
             'token': token
             }
@@ -85,7 +81,6 @@ def create_product(product_request: schemas.ProductCreate, db: Session = Depends
 
     return new_product
 
-    
 
 @products_api_app.get('/products', tags=["Product"], response_model=List[schemas.Product])
 def get_all_products(name: Optional[str] = None, db: Session = Depends(get_db)):
@@ -134,15 +129,15 @@ def update_product(product_id: int,product_request: schemas.ProductBase, db: Ses
     Update an Product stored in the database
     """
     db_product = ProductRepo.fetch_by_id(db, product_id)
-    if db_product:
+    db_product_name = ProductRepo.fetch_by_name(db, product_request.name)
+    if db_product and not db_product_name:
         update_item_encoded = jsonable_encoder(product_request)
         db_product.name = update_item_encoded['name']
         db_product.description = update_item_encoded['description']       
         ProductRepo.update(db=db, product_data=db_product)
         return {'message': f'Product with id {product_id} was succesfully updated'}
-    else:
-        raise HTTPException(
-            status_code=400, detail="Product not found with the given ID")
+    raise HTTPException(
+        status_code=400, detail="Product not found with the given ID or unique constraint failed")
 
 @products_api_app.get('/products/{product_id}/price_history', tags=["Price"], response_model=schemas.PriceHistory )
 def get_price_history(product_id: int, db: Session = Depends(get_db)):
@@ -160,6 +155,9 @@ def get_price_change(from_time: str, to_time: str, product_id: int, db: Session 
     """
     Returns percentual rise/fall for a chosen period of time
     """
-    percentual_change = PriceRepo.get_price_change(db=db, from_time=from_time, to_time=to_time, product_id=product_id)
+    percentual_change = PriceRepo.get_price_change(db=db, from_time=from_time, 
+    to_time=to_time, product_id=product_id)
     if percentual_change:
         return {"message": f"Price changed on {percentual_change}%"}
+
+    raise HTTPException(status_code=404, detail='Product not found with the given ID or wrong time')
